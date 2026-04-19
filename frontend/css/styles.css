@@ -1,0 +1,119 @@
+body {
+    background-color: #eef1f6;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+    min-height: 100vh;
+}
+
+/* Sticky footer: main grows when content is short (e.g. zero listings). */
+body.site-layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+body.site-layout > header {
+    flex-shrink: 0;
+}
+
+body.site-layout > main {
+    flex: 1 0 auto;
+}
+
+body.site-layout > footer {
+    flex-shrink: 0;
+    margin-top: auto;
+}
+
+header.bg-light {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid #e2e6ec;
+}
+
+.navbar {
+    background-color: #ffffff;
+    box-shadow: none;
+}
+
+.navbar-brand {
+    font-weight: bold;
+    color: #452cb3;
+}
+
+.card {
+    border-radius: 15px;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+}
+
+.card-img-top {
+    height: 200px;
+    object-fit: cover;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+
+.listing-carousel {
+    --bs-carousel-transition-duration: 0.22s;
+}
+
+.listing-carousel .carousel-item {
+    transition: transform var(--bs-carousel-transition-duration, 0.22s) ease-in-out;
+}
+
+.listing-carousel .carousel-control-prev,
+.listing-carousel .carousel-control-next {
+    width: 42px;
+    opacity: 0.95;
+}
+
+.listing-carousel .carousel-control-prev-icon,
+.listing-carousel .carousel-control-next-icon {
+    background-color: rgba(0, 0, 0, 0.55);
+    border-radius: 50%;
+    background-size: 60% 60%;
+    width: 32px;
+    height: 32px;
+}
+
+.btn-primary {
+    background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(90deg, #2575fc 0%, #6a11cb 100%);
+    transform: scale(1.05);
+}
+
+.modal-content {
+    border-radius: 15px;
+    padding: 20px;
+}
+
+.list-group-item {
+    cursor: pointer;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+.list-group-item.active {
+    background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+    color: white;
+    font-weight: bold;
+}
+
+h3, h4, h5 {
+    color: #444;
+}
+
+@media (max-width: 768px) {
+    .card-img-top {
+        height: 150px;
+    }
+}

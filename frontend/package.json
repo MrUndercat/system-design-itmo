@@ -1,0 +1,17 @@
+{
+  "name": "rentalsite-lab2",
+  "version": "1.0.0",
+  "description": "Лабораторная работа 2: взаимодействие с внешним API",
+  "scripts": {
+    "server": "json-server --watch db.json --port 3000 --middlewares ./middleware.js",
+    "server:delay": "json-server --watch db.json --port 3000 --middlewares ./middleware.js --delay 1000"
+  },
+  "devDependencies": {
+    "json-server": "^0.17.4"
+  }
+}
+
+
+
+
+

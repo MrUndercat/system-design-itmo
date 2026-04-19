@@ -1,0 +1,108 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "email": "user@example.com",
+      "password": "password123",
+      "username": "user@example.com",
+      "phone": "+7 999 123-45-67"
+    },
+    {
+      "id": 2,
+      "email": "test@test.com",
+      "password": "test123",
+      "username": "test@test.com",
+      "phone": "+7 999 999-99-99"
+    },
+    {
+      "email": "sokovichstepan@gmail.com",
+      "password": "икщйзйхзйцщкуйзц",
+      "username": "sokovichstepan@gmail.com",
+      "phone": "",
+      "id": 3
+    },
+    {
+      "email": "sokovichstepan@gmail.ru",
+      "password": "123456",
+      "username": "sokovichstepan@gmail.ru",
+      "phone": "",
+      "id": 4
+    }
+  ],
+  "listings": [
+    {
+      "id": 1,
+      "title": "2-х комн. квартира, Центр",
+      "type": "apartment",
+      "price": 45000,
+      "location": "Центр",
+      "image": "img/download.jpg",
+      "description": "Квартира с евроремонтом, 2 комнаты, мебель.",
+      "rooms": 2,
+      "area": 65
+    },
+    {
+      "id": 2,
+      "title": "Студия у метро",
+      "type": "studio",
+      "price": 30000,
+      "location": "Север",
+      "image": "img/download2.jpg",
+      "description": "Студия 25м², полностью меблирована, рядом метро.",
+      "rooms": 1,
+      "area": 25
+    },
+    {
+      "id": 3,
+      "title": "Частный дом, пригород",
+      "type": "house",
+      "price": 70000,
+      "location": "Пригород",
+      "image": "img/download3.jpg",
+      "description": "Дом с садом, 3 спальни, гараж, для семьи.",
+      "rooms": 3,
+      "area": 120
+    },
+    {
+      "id": 4,
+      "title": "3-х комн. квартира, Южный",
+      "type": "apartment",
+      "price": 55000,
+      "location": "Южный",
+      "image": "img/download4.jpg",
+      "description": "Квартира 80м², 3 комнаты, балкон, близко к парку.",
+      "rooms": 3,
+      "area": 80
+    }
+  ],
+  "bookings": [
+    {
+      "id": 1,
+      "userId": 1,
+      "listingId": 1,
+      "startDate": "2025-12-01",
+      "endDate": "2026-03-01",
+      "status": "active"
+    }
+  ],
+  "sessions": [
+    {
+      "userId": 3,
+      "token": "token_1764886582834_93yxiernh",
+      "createdAt": "2025-12-04T22:16:22.834Z",
+      "id": 1
+    },
+    {
+      "userId": 1,
+      "token": "token_1764887127888_1kf7yzut7",
+      "createdAt": "2025-12-04T22:25:27.888Z",
+      "id": 2
+    },
+    {
+      "userId": 4,
+      "token": "token_1764964544549_b1mc8tdbu",
+      "createdAt": "2025-12-05T19:55:44.549Z",
+      "id": 3
+    }
+  ]
+}
