@@ -1,3 +1,7 @@
+function profilePageHref(user) {
+    return user && user.type === 'landlord' ? 'profile_landlord.html' : 'profile.html';
+}
+
 async function initNavbar() {
     const loginNav = document.getElementById('loginNav');
     const registerNav = document.getElementById('registerNav');

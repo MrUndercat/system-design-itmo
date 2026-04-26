@@ -1,3 +1,4 @@
+import "./load-env";
 import { startGateway } from "./app";
 
 startGateway().catch((error) => {

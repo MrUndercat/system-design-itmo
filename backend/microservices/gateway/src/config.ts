@@ -1,6 +1,25 @@
+function readEnv(name: string): string {
+  const v = process.env[name];
+  if (v == null || v === "") {
+    throw new Error(`Required environment variable ${name} is not set`);
+  }
+  return v;
+}
+
+function readInt(name: string): number {
+  return parseInt(readEnv(name), 10);
+}
+
 export const config = {
-  port: Number(process.env.PORT || 3000),
-  userGraphQlUrl: process.env.USER_GRAPHQL_URL || "http://localhost:4001",
-  rentGraphQlUrl: process.env.RENT_GRAPHQL_URL || "http://localhost:4002",
-  commGraphQlUrl: process.env.COMM_GRAPHQL_URL || "http://localhost:4003",
+  port: readInt("PORT"),
+  userGraphQlUrl: readEnv("USER_GRAPHQL_URL"),
+  rentGraphQlUrl: readEnv("RENT_GRAPHQL_URL"),
+  commGraphQlUrl: readEnv("COMM_GRAPHQL_URL"),
 };
+
+export function readCorsAllowedOrigins(): string[] {
+  return readEnv("CORS_ALLOWED_ORIGINS")
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}

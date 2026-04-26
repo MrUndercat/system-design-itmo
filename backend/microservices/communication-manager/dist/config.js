@@ -1,11 +1,21 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.config = void 0;
+function readEnv(name) {
+    const v = process.env[name];
+    if (v == null || v === "") {
+        throw new Error(`Required environment variable ${name} is not set`);
+    }
+    return v;
+}
+function readInt(name) {
+    return parseInt(readEnv(name), 10);
+}
 exports.config = {
-    port: Number(process.env.PORT || 3003),
-    graphqlPort: Number(process.env.GRAPHQL_PORT || 4003),
-    jwtSecret: process.env.JWT_SECRET || "dev",
-    internalToken: process.env.INTERNAL_SERVICE_TOKEN || "dev-internal-token",
-    userManagerUrl: process.env.USER_MANAGER_URL || "http://localhost:3001",
-    rentManagerUrl: process.env.RENT_MANAGER_URL || "http://localhost:3002",
+    port: readInt("PORT"),
+    graphqlPort: readInt("GRAPHQL_PORT"),
+    jwtSecret: readEnv("JWT_SECRET"),
+    internalToken: readEnv("INTERNAL_SERVICE_TOKEN"),
+    userManagerUrl: readEnv("USER_MANAGER_URL"),
+    rentManagerUrl: readEnv("RENT_MANAGER_URL"),
 };

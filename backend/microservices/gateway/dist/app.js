@@ -11,7 +11,7 @@ const cors_1 = __importDefault(require("cors"));
 const express_1 = __importDefault(require("express"));
 const config_1 = require("./config");
 const ACCESS_COOKIE = "access_token";
-const ALLOWED_ORIGINS = new Set(["http://localhost:8080", "http://127.0.0.1:8080", "null"]);
+const ALLOWED_ORIGINS = new Set((0, config_1.readCorsAllowedOrigins)());
 function readCookie(rawCookie, key) {
     if (!rawCookie)
         return null;
@@ -86,7 +86,7 @@ async function startGateway() {
         },
         credentials: true,
     }));
-    app.use(express_1.default.json());
+    app.use(express_1.default.json({ limit: "20mb" }));
     app.use("/graphql", (0, express4_1.expressMiddleware)(server, {
         context: async ({ req }) => {
             const cookieToken = readCookie(req.headers.cookie, ACCESS_COOKIE);

@@ -3,10 +3,10 @@ import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@as-integrations/express4";
 import cors from "cors";
 import express from "express";
-import { config } from "./config";
+import { config, readCorsAllowedOrigins } from "./config";
 
 const ACCESS_COOKIE = "access_token";
-const ALLOWED_ORIGINS = new Set(["http://localhost:8080", "http://127.0.0.1:8080", "null"]);
+const ALLOWED_ORIGINS = new Set(readCorsAllowedOrigins());
 
 function readCookie(rawCookie: string | undefined, key: string): string | null {
   if (!rawCookie) return null;

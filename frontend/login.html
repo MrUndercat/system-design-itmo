@@ -73,13 +73,13 @@
         }
 
         try {
-            await loginUser(email, password);
-            
+            const { user } = await loginUser(email, password);
+
             const loginModal = new bootstrap.Modal(document.getElementById('loginSuccessModal'));
             loginModal.show();
 
             setTimeout(() => {
-                window.location = 'profile.html';
+                window.location = profilePageHref(user);
             }, 2000);
         } catch (error) {
             const errorDiv = document.createElement('div');

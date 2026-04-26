@@ -11,7 +11,7 @@ async function loadListings() {
             listingsAPI.getAll(),
             authAPI.getCurrentUser().catch(() => null),
         ]);
-        const hideChatButton = currentUser?.type === 'landlord';
+        const hideChatButton = currentUser?.type !== 'tenant';
 
         listingsContainer.innerHTML = '';
 
@@ -225,7 +225,7 @@ async function showUserCard(userId, listingId) {
             showModal('userCardModal', 'Автор', '<div class="alert alert-warning">Пользователь не найден</div>');
             return;
         }
-        const hideWriteButton = viewer?.type === 'landlord';
+        const hideWriteButton = viewer?.type !== 'tenant';
         const writeButtonHtml = hideWriteButton
             ? ''
             : '<button class="btn btn-success w-100 mt-2" id="writeToUserBtn">Написать сообщение</button>';
@@ -252,6 +252,15 @@ async function showUserCard(userId, listingId) {
 }
 
 async function startChatWithUser(otherUserId, listingId = null) {
+    const viewer = await authAPI.getCurrentUser();
+    if (viewer?.type !== 'tenant') {
+        showModal(
+            'userCardModal',
+            'Сообщения',
+            '<p class="text-muted">Написать сообщение могут только зарегистрированные арендаторы.</p>'
+        );
+        return;
+    }
     try {
         const chat = await chatsAPI.createOrGetChat(otherUserId, listingId);
         if (!chat?.id) throw new Error('chat not created');

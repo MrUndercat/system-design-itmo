@@ -75,17 +75,20 @@ async function bootstrapProfile() {
         return;
     }
     const path = window.location.pathname || '';
+    const search = window.location.search || '';
     if (currentUser.type === 'landlord' && path.endsWith('/profile.html')) {
-        window.location.href = 'profile_landlord.html';
+        window.location.href = 'profile_landlord.html' + search;
         return;
     }
     if (currentUser.type !== 'landlord' && path.endsWith('/profile_landlord.html')) {
-        window.location.href = 'profile.html';
+        window.location.href = 'profile.html' + search;
         return;
     }
     const usernameDisplay = document.getElementById('usernameDisplay');
     if (usernameDisplay) usernameDisplay.textContent = currentUser.email || currentUser.name || 'Пользователь';
-    switchToTab(parseProfileQuery().tab === 'messages' ? 'Сообщения' : 'Профиль');
+    const q = parseProfileQuery();
+    const openMessages = q.tab === 'messages' && currentUser.type === 'tenant';
+    switchToTab(openMessages ? 'Сообщения' : 'Профиль');
 }
 
 async function switchToTab(tabName) {
@@ -101,6 +104,10 @@ async function switchToTab(tabName) {
         profileContent.innerHTML = `<div id="landlordListingsPanel"></div>`;
         await renderLandlordListingsPanel();
     } else if (tabName === 'Сообщения') {
+        if (currentUser.type !== 'tenant') {
+            profileContent.innerHTML = `<h5>Сообщения</h5><p class="text-muted">Переписка доступна только арендаторам.</p>`;
+            return;
+        }
         profileContent.innerHTML = `
           <div class="row">
             <div class="col-md-4">

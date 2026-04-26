@@ -49,16 +49,15 @@ async function initDb() {
       status TEXT NOT NULL
     );
   `);
-    await pool.query(`
-    ALTER TABLE listing_photos ADD COLUMN IF NOT EXISTS photo_id TEXT;
-    ALTER TABLE listing_photos ADD COLUMN IF NOT EXISTS url TEXT;
-    UPDATE listing_photos SET photo_id = COALESCE(photo_id, url) WHERE photo_id IS NULL;
-    ALTER TABLE listing_photos ALTER COLUMN photo_id SET NOT NULL;
-  `);
     const { rows: et } = await pool.query("SELECT COUNT(*)::int AS c FROM estate_types");
     if (et[0].c === 0) {
-        await pool.query(`INSERT INTO estate_types (name) VALUES ('Квартира'), ('Дом'), ('Комната')`);
+        await pool.query(`INSERT INTO estate_types (name) VALUES ('apartment'), ('house'), ('studio')`);
     }
+    await pool.query(`
+    UPDATE estate_types SET name = 'apartment' WHERE name = 'Квартира';
+    UPDATE estate_types SET name = 'house' WHERE name = 'Дом';
+    UPDATE estate_types SET name = 'studio' WHERE name IN ('Комната', 'Студия');
+  `);
     const { rows: am } = await pool.query("SELECT COUNT(*)::int AS c FROM amenities");
     if (am[0].c === 0) {
         await pool.query(`INSERT INTO amenities (name) VALUES

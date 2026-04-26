@@ -8,6 +8,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "dotenv": "^16.4.5",
     "@aws-sdk/client-s3": "^3.908.0",
     "@apollo/server": "^5.0.0",
     "@apollo/subgraph": "^2.11.3",

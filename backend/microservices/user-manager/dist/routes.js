@@ -39,7 +39,7 @@ function registerRoutes(app) {
         catch (e) {
             const maybePgError = e;
             if (maybePgError.code === "23505") {
-                return res.status(409).json({ message: "email already registered" });
+                return res.status(409).json({ message: "юзер уже существует" });
             }
             throw e;
         }

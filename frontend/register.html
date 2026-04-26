@@ -82,13 +82,13 @@
         }
 
         try {
-            await registerUser(email, password, type);
-            
+            const { user } = await registerUser(email, password, type);
+
             const registerModal = new bootstrap.Modal(document.getElementById('registerSuccessModal'));
             registerModal.show();
 
             setTimeout(() => {
-                window.location = 'profile.html';
+                window.location = profilePageHref(user);
             }, 2000);
         } catch (error) {
             const errorDiv = document.createElement('div');

@@ -1,4 +1,11 @@
-const API_BASE_URL = 'http://localhost:3000/graphql';
+const API_BASE_URL = (function () {
+  if (typeof window === 'undefined') return 'http://localhost:3000/graphql';
+  if (window.GRAPHQL_URL) return window.GRAPHQL_URL;
+  if (['8080', '5500', '4173', '5000', '8081'].indexOf(window.location.port) >= 0) {
+    return window.location.protocol + '//' + window.location.hostname + ':3000/graphql';
+  }
+  return new URL('/graphql', window.location.origin).href;
+})();
 
 class GraphQLClient {
   constructor(baseURL = API_BASE_URL) {

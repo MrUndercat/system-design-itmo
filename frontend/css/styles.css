@@ -5,7 +5,6 @@ body {
     min-height: 100vh;
 }
 
-/* Sticky footer: main grows when content is short (e.g. zero listings). */
 body.site-layout {
     display: flex;
     flex-direction: column;

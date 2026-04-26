@@ -118,17 +118,26 @@ const resolvers = {
                 throw new Error("email, password and name are required");
             }
             const passwordHash = await bcryptjs_1.default.hash(password, 10);
-            const { rows } = await db_1.pool.query(`INSERT INTO users (email, name, phone, password_hash, type)
-         VALUES ($1,$2,$3,$4,$5)
-         RETURNING id, email, name, type, created_at`, [email, name, phone, passwordHash, type]);
-            const u = rows[0];
-            return {
-                id: u.id,
-                email: u.email,
-                name: u.name,
-                type: u.type,
-                createdAt: u.created_at,
-            };
+            try {
+                const { rows } = await db_1.pool.query(`INSERT INTO users (email, name, phone, password_hash, type)
+           VALUES ($1,$2,$3,$4,$5)
+           RETURNING id, email, name, type, created_at`, [email, name, phone, passwordHash, type]);
+                const u = rows[0];
+                return {
+                    id: u.id,
+                    email: u.email,
+                    name: u.name,
+                    type: u.type,
+                    createdAt: u.created_at,
+                };
+            }
+            catch (e) {
+                const err = e;
+                if (err.code === "23505" || err.message?.includes("users_email_key")) {
+                    throw new Error("юзер уже существует");
+                }
+                throw e;
+            }
         },
         login: async (_, args) => {
             const { rows } = await db_1.pool.query("SELECT id, email, name, type, password_hash, created_at FROM users WHERE email = $1", [args.email]);

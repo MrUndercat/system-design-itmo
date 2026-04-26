@@ -76,6 +76,7 @@ const typeDefs = (0, graphql_tag_1.default) `
   }
 
   type Mutation {
+    uploadListingPhoto(base64: String!, contentType: String): String!
     createListing(input: CreateListingInput!): Listing!
     updateListing(input: UpdateListingInput!): Listing!
     createBooking(input: CreateBookingInput!): BookingDeal!
@@ -103,7 +104,7 @@ function toListing(row, photoIds = []) {
         price: Number(row.price),
         location: row.city,
         image: row.image_photo_id ? (0, s3_1.buildPhotoUrl)(row.image_photo_id) : photoUrls[0] || "https://placehold.co/600x400?text=Listing",
-        photos: photoIds,
+        photos: photoUrls,
         type: row.type_name || "property",
         rooms: null,
         area: null,
@@ -202,6 +203,26 @@ const resolvers = {
         },
     },
     Mutation: {
+        uploadListingPhoto: async (_, args, ctx) => {
+            if (!ctx.userId)
+                throw new Error("unauthorized");
+            const raw = (args.base64 || "").trim();
+            if (!raw)
+                throw new Error("base64 is required");
+            const dataPart = raw.startsWith("data:") ? raw.slice(raw.indexOf(",") + 1) : raw;
+            let data;
+            try {
+                data = Buffer.from(dataPart, "base64");
+            }
+            catch {
+                throw new Error("invalid base64 payload");
+            }
+            if (!data.length)
+                throw new Error("empty file");
+            if (data.length > 10 * 1024 * 1024)
+                throw new Error("file too large");
+            return (0, s3_1.uploadListingPhoto)({ data, contentType: args.contentType });
+        },
         createListing: async (_, args, ctx) => {
             if (!ctx.userId)
                 throw new Error("unauthorized");
@@ -265,10 +286,7 @@ const resolvers = {
                     const photos = (0, s3_1.normalizePhotoIds)(args.input.photos);
                     await client.query("DELETE FROM listing_photos WHERE listing_id = $1", [args.input.id]);
                     for (const photoId of photos) {
-                        await client.query("INSERT INTO listing_photos (listing_id, photo_id) VALUES ($1, $2)", [
-                            args.input.id,
-                            photoId,
-                        ]);
+                        await client.query("INSERT INTO listing_photos (listing_id, photo_id) VALUES ($1, $2)", [args.input.id, photoId]);
                     }
                 }
                 await client.query("COMMIT");
