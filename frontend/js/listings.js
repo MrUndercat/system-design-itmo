@@ -212,7 +212,8 @@ function showModal(id, title, bodyHtml) {
     const bodyEl = modalElement.querySelector('.modal-body');
     if (titleEl) titleEl.textContent = title;
     if (bodyEl) bodyEl.innerHTML = bodyHtml;
-    new bootstrap.Modal(modalElement).show();
+    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+    modal.show();
 }
 
 async function showUserCard(userId, listingId) {
@@ -264,7 +265,10 @@ async function startChatWithUser(otherUserId, listingId = null) {
     try {
         const chat = await chatsAPI.createOrGetChat(otherUserId, listingId);
         if (!chat?.id) throw new Error('chat not created');
-        window.location.href = `profile.html?chatId=${encodeURIComponent(chat.id)}&tab=messages`;
+        const next = new URL('/profile', window.location.origin);
+        next.searchParams.set('chatId', String(chat.id));
+        next.searchParams.set('tab', 'messages');
+        window.location.href = next.href;
     } catch (error) {
         console.error('Error creating/opening chat:', error);
         showModal('userCardModal', 'Чаты', '<div class="alert alert-danger">Не удалось открыть чат</div>');

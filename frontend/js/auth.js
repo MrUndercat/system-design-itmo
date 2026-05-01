@@ -1,8 +1,15 @@
 function profilePageHref(user) {
-    return user && user.type === 'landlord' ? 'profile_landlord.html' : 'profile.html';
+    return user && user.type === 'landlord' ? '/profile_landlord' : '/profile';
 }
 
-async function initNavbar() {
+function isProfileShellPage() {
+    const p = String(window.location.pathname || '').replace(/\/+$/, '');
+    const leaf = (p.split('/').pop() || '').toLowerCase();
+    return leaf === 'profile' || leaf === 'profile.html' || leaf === 'profile_landlord.html';
+}
+
+/** На страницах профиля можно передать user из того же запроса me(), чтобы не дёргать API дважды. */
+async function initNavbar(prefetched) {
     const loginNav = document.getElementById('loginNav');
     const registerNav = document.getElementById('registerNav');
     const profileNav = document.getElementById('profileNav');
@@ -12,14 +19,17 @@ async function initNavbar() {
 
     if (loginNav && registerNav && profileNav && logoutNav) {
         try {
-            const user = await authAPI.getCurrentUser();
+            let user = prefetched;
+            if (typeof user === 'undefined') {
+                user = await authAPI.getCurrentUser();
+            }
             if (user) {
                 loginNav.style.display = 'none';
                 registerNav.style.display = 'none';
                 profileNav.style.display = 'block';
                 logoutNav.style.display = 'block';
                 if (profileLink) {
-                    profileLink.href = user.type === 'landlord' ? 'profile_landlord.html' : 'profile.html';
+                    profileLink.href = user.type === 'landlord' ? '/profile_landlord' : '/profile';
                 }
                 
                 if (usernameDisplay) {
@@ -78,7 +88,9 @@ function isAuthenticated() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    await initNavbar();
+    if (!isProfileShellPage()) {
+        await initNavbar();
+    }
 
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {

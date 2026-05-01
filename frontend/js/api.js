@@ -1,10 +1,10 @@
-const API_BASE_URL = (function () {
+const API_BASE_URL = (function resolveGatewayGraphqlUrl() {
   if (typeof window === 'undefined') return 'http://localhost:3000/graphql';
-  if (window.GRAPHQL_URL) return window.GRAPHQL_URL;
-  if (['8080', '5500', '4173', '5000', '8081'].indexOf(window.location.port) >= 0) {
-    return window.location.protocol + '//' + window.location.hostname + ':3000/graphql';
-  }
-  return new URL('/graphql', window.location.origin).href;
+  const legacy = typeof window.GRAPHQL_URL === 'string' ? window.GRAPHQL_URL.trim() : '';
+  if (legacy) return legacy;
+  const raw = window.GATEWAY_PORT != null && window.GATEWAY_PORT !== '' ? String(window.GATEWAY_PORT) : '3000';
+  const port = raw.replace(/^:/, '') || '3000';
+  return `${window.location.protocol}//${window.location.hostname}:${port}/graphql`;
 })();
 
 class GraphQLClient {

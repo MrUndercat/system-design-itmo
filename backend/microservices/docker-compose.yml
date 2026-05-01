@@ -139,10 +139,7 @@ services:
     depends_on:
       - gateway
     ports:
-      - "${FRONTEND_PORT:-8080}:80"
-    environment:
-      GATEWAY_UPSTREAM: ${GATEWAY_UPSTREAM}
-    env_file: .env
+      - "${FRONTEND_PORT:-8080}:8080"
 
 volumes:
   pg_user:

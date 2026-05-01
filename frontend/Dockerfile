@@ -1,4 +1,12 @@
-FROM nginx:1.27-alpine
-ENV GATEWAY_UPSTREAM=gateway:3000
-COPY nginx/templates/default.conf.template /etc/nginx/templates/default.conf.template
-COPY . /usr/share/nginx/html
+FROM node:20-alpine
+
+WORKDIR /app
+
+RUN npm install -g serve@14.2.4
+
+COPY . .
+
+ENV NODE_ENV=production
+EXPOSE 8080
+
+CMD ["serve", ".", "-l", "8080", "--no-clipboard"]

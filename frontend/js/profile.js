@@ -30,7 +30,8 @@ function showModal(id, title, bodyHtml) {
     const bodyEl = modalElement.querySelector('.modal-body');
     if (titleEl) titleEl.textContent = title;
     if (bodyEl) bodyEl.innerHTML = bodyHtml;
-    new bootstrap.Modal(modalElement).show();
+    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+    modal.show();
 }
 
 async function showUserCard(userId) {
@@ -64,8 +65,23 @@ function parseProfileQuery() {
     const params = new URLSearchParams(window.location.search);
     return {
         chatId: params.get('chatId'),
-        tab: params.get('tab'),
+        tab: (params.get('tab') || '').trim().toLowerCase(),
     };
+}
+
+function profileHtmlLeaf(pathname) {
+    const p = String(pathname || '').replace(/\/+$/, '');
+    const seg = (p.split('/').pop() || '').toLowerCase();
+    if (seg === 'profile') return 'profile.html';
+    return seg;
+}
+
+function setSidebarActiveTab(tabLabel) {
+    document.querySelectorAll('.list-group-item').forEach((item) => {
+        const label = item.textContent.trim();
+        if (label === tabLabel) item.classList.add('active');
+        else item.classList.remove('active');
+    });
 }
 
 async function bootstrapProfile() {
@@ -74,26 +90,28 @@ async function bootstrapProfile() {
         window.location.href = 'login.html';
         return;
     }
+    await initNavbar(currentUser);
     const path = window.location.pathname || '';
     const search = window.location.search || '';
-    if (currentUser.type === 'landlord' && path.endsWith('/profile.html')) {
-        window.location.href = 'profile_landlord.html' + search;
+    const leaf = profileHtmlLeaf(path);
+    if (currentUser.type === 'landlord' && leaf === 'profile.html') {
+        window.location.href = '/profile_landlord' + search;
         return;
     }
-    if (currentUser.type !== 'landlord' && path.endsWith('/profile_landlord.html')) {
-        window.location.href = 'profile.html' + search;
+    if (currentUser.type !== 'landlord' && leaf === 'profile_landlord.html') {
+        window.location.href = '/profile' + search;
         return;
     }
-    const usernameDisplay = document.getElementById('usernameDisplay');
-    if (usernameDisplay) usernameDisplay.textContent = currentUser.email || currentUser.name || 'Пользователь';
     const q = parseProfileQuery();
     const openMessages = q.tab === 'messages' && currentUser.type === 'tenant';
-    switchToTab(openMessages ? 'Сообщения' : 'Профиль');
+    await switchToTab(openMessages ? 'Сообщения' : 'Профиль');
 }
 
 async function switchToTab(tabName) {
     const profileContent = document.querySelector('.col-md-9');
     if (!profileContent) return;
+    const sidebarLabels = ['Профиль', 'Мои аренды', 'Сообщения', 'Мои объявления'];
+    if (sidebarLabels.includes(tabName)) setSidebarActiveTab(tabName);
     if (tabName === 'Профиль') {
         profileContent.innerHTML = `<div id="profileOverview"></div>`;
         await renderProfileOverview();
@@ -489,7 +507,7 @@ async function loadChats() {
 
         const requestedChatId = parseProfileQuery().chatId;
         if (requestedChatId) {
-            const match = chats.find((chat) => chat.id === requestedChatId);
+            const match = chats.find((chat) => String(chat.id) === String(requestedChatId));
             if (match) {
                 const otherUserId = match.userAId === currentUser.id ? match.userBId : match.userAId;
                 await openChat(match.id, otherUserId);
@@ -555,7 +573,7 @@ async function openChat(chatId, otherUserId) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
     const tabs = document.querySelectorAll('.list-group-item');
     tabs.forEach((tab) => {
         tab.addEventListener('click', (event) => {
@@ -565,5 +583,5 @@ window.addEventListener('DOMContentLoaded', () => {
             void switchToTab(tab.textContent.trim());
         });
     });
-    void bootstrapProfile();
+    await bootstrapProfile();
 });
