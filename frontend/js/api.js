@@ -49,9 +49,10 @@ function humanizeAuthError(message) {
   if (
     message.includes('duplicate key') ||
     message.includes('users_email_key') ||
-    message.includes('email already registered')
+    message.includes('email already registered') ||
+    message.includes('юзер уже существует')
   ) {
-    return 'юзер уже существует';
+    return 'Пользователь с таким email уже зарегистрирован';
   }
   return message;
 }
@@ -241,6 +242,18 @@ const listingsAPI = {
     );
     return data.uploadListingPhoto;
   },
+
+  async unpublish(id) {
+    const data = await api.request(
+      `
+      mutation UnpublishListing($id: ID!) {
+        unpublishListing(id: $id)
+      }
+      `,
+      { id }
+    );
+    return Boolean(data.unpublishListing);
+  },
 };
 
 const usersAPI = {
@@ -371,6 +384,30 @@ const reviewsAPI = {
       { listingId }
     );
     return data.reviewsByListing || [];
+  },
+
+  async create(input) {
+    const data = await api.request(
+      `
+      mutation CreateReview($targetId: ID!, $listingId: ID!, $rating: Int!, $text: String) {
+        createReview(targetId: $targetId, listingId: $listingId, rating: $rating, text: $text) {
+          id
+          userId
+          authorId
+          rating
+          text
+          createdAt
+        }
+      }
+      `,
+      {
+        targetId: input.targetId,
+        listingId: input.listingId,
+        rating: input.rating,
+        text: input.text || null,
+      }
+    );
+    return data.createReview;
   },
 };
 

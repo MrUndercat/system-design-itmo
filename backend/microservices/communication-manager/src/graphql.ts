@@ -5,11 +5,14 @@ import gql from "graphql-tag";
 import jwt from "jsonwebtoken";
 import { pool } from "./db";
 import { config } from "./config";
+import { assertUsersExist } from "./clients/user-manager";
+import { assertListingExists } from "./clients/rent-manager";
 
 type TokenPayload = { sub: string };
 
 type GraphQlContext = {
   userId: string | null;
+  authHeader: string;
 };
 
 function parseUserIdFromAuth(authHeader?: string): string | null {
@@ -66,6 +69,7 @@ const typeDefs = gql`
   type Mutation {
     createOrGetChat(otherUserId: ID!, listingId: ID): Chat!
     sendMessage(chatId: ID!, text: String!): Message!
+    createReview(targetId: ID!, listingId: ID!, rating: Int!, text: String): Review!
   }
 `;
 
@@ -279,6 +283,30 @@ const resolvers = {
       );
       return toMessage(rows[0] as DbMessage);
     },
+    createReview: async (
+      _: unknown,
+      args: { targetId: string; listingId: string; rating: number; text?: string | null },
+      ctx: GraphQlContext
+    ) => {
+      if (!ctx.userId) throw new Error("unauthorized");
+      if (args.targetId === ctx.userId) throw new Error("cannot review self");
+      if (!args.listingId) throw new Error("listingId is required");
+      if (args.rating < 1 || args.rating > 5) throw new Error("rating must be between 1 and 5");
+
+      const usersOk = await assertUsersExist([ctx.userId, args.targetId]);
+      if (!usersOk) throw new Error("user not found");
+
+      const listingOk = await assertListingExists(args.listingId);
+      if (!listingOk) throw new Error("listing not found");
+
+      const { rows } = await pool.query(
+        `INSERT INTO reviews (author_id, target_id, rating, text, listing_id)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, target_id, author_id, rating, text, created_at`,
+        [ctx.userId, args.targetId, args.rating, args.text?.trim() || null, args.listingId]
+      );
+      return toReview(rows[0] as DbReview);
+    },
   },
 };
 
@@ -290,6 +318,7 @@ export async function startGraphQlServer(): Promise<void> {
     listen: { port: config.graphqlPort },
     context: async ({ req }) => ({
       userId: parseUserIdFromAuth(req.headers.authorization),
+      authHeader: req.headers.authorization || "",
     }),
   });
   console.log(`communication-manager GraphQL listening on ${config.graphqlPort}`);

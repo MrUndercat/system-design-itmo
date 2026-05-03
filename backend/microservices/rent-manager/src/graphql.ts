@@ -80,6 +80,7 @@ const typeDefs = gql`
     uploadListingPhoto(base64: String!, contentType: String): String!
     createListing(input: CreateListingInput!): Listing!
     updateListing(input: UpdateListingInput!): Listing!
+    unpublishListing(id: ID!): Boolean!
     createBooking(input: CreateBookingInput!): BookingDeal!
     cancelBooking(id: ID!): Boolean!
   }
@@ -206,7 +207,7 @@ const resolvers = {
         `SELECT l.id, l.owner_id, l.name, l.description, l.price, l.city, l.created_at, et.name AS type_name
          FROM listings l
          LEFT JOIN estate_types et ON et.id = l.type_id
-         WHERE owner_id = $1
+         WHERE owner_id = $1 AND l.archived_at IS NULL
          ORDER BY created_at DESC`,
         [user.id]
       );
@@ -226,6 +227,7 @@ const resolvers = {
                 ) AS image_photo_id
          FROM listings l
          LEFT JOIN estate_types et ON et.id = l.type_id
+         WHERE l.archived_at IS NULL
          ORDER BY l.created_at DESC LIMIT 100`
       );
       const mapped = await Promise.all(
@@ -337,7 +339,7 @@ const resolvers = {
     ) => {
       if (!ctx.userId) throw new Error("unauthorized");
       const { rows: ownerRows } = await pool.query<{ owner_id: string }>(
-        "SELECT owner_id FROM listings WHERE id = $1",
+        "SELECT owner_id FROM listings WHERE id = $1 AND archived_at IS NULL",
         [args.input.id]
       );
       if (!ownerRows.length) throw new Error("listing not found");
@@ -380,10 +382,22 @@ const resolvers = {
       if (!updated) throw new Error("listing not found");
       return updated;
     },
+    unpublishListing: async (_: unknown, args: { id: string }, ctx: GraphQlContext) => {
+      if (!ctx.userId) throw new Error("unauthorized");
+      const { rows } = await pool.query<{ owner_id: string; archived_at: string | null }>(
+        "SELECT owner_id, archived_at FROM listings WHERE id = $1",
+        [args.id]
+      );
+      if (!rows.length) throw new Error("listing not found");
+      if (rows[0].owner_id !== ctx.userId) throw new Error("forbidden");
+      if (rows[0].archived_at) return true;
+      await pool.query("UPDATE listings SET archived_at = now() WHERE id = $1", [args.id]);
+      return true;
+    },
     createBooking: async (_: unknown, args: { input: { listingId: string; startDate?: string; endDate?: string } }, ctx: GraphQlContext) => {
       if (!ctx.userId) throw new Error("unauthorized");
       const { rows: listingRows } = await pool.query<{ owner_id: string }>(
-        "SELECT owner_id FROM listings WHERE id = $1",
+        "SELECT owner_id FROM listings WHERE id = $1 AND archived_at IS NULL",
         [args.input.listingId]
       );
       if (!listingRows.length) throw new Error("listing not found");

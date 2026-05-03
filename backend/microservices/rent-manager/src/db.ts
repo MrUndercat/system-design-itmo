@@ -16,6 +16,7 @@ async function initDb(): Promise<void> {
     CREATE TABLE IF NOT EXISTS listings (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      archived_at TIMESTAMPTZ,
       owner_id UUID NOT NULL,
       type_id INT NOT NULL REFERENCES estate_types(id),
       name TEXT NOT NULL,
@@ -46,6 +47,7 @@ async function initDb(): Promise<void> {
       status TEXT NOT NULL
     );
   `);
+  await pool.query(`ALTER TABLE listings ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ`);
 
   const { rows: et } = await pool.query<{ c: number }>("SELECT COUNT(*)::int AS c FROM estate_types");
   if (et[0].c === 0) {

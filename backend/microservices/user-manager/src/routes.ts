@@ -46,7 +46,7 @@ export function registerRoutes(app: Express): void {
     } catch (e: unknown) {
       const maybePgError = e as { code?: string };
       if (maybePgError.code === "23505") {
-        return res.status(409).json({ message: "юзер уже существует" });
+        return res.status(409).json({ message: "Пользователь с таким email уже зарегистрирован" });
       }
       throw e;
     }

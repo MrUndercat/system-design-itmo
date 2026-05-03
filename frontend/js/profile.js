@@ -103,29 +103,22 @@ async function bootstrapProfile() {
         return;
     }
     const q = parseProfileQuery();
-    const openMessages = q.tab === 'messages' && currentUser.type === 'tenant';
+    const openMessages = q.tab === 'messages';
     await switchToTab(openMessages ? 'Сообщения' : 'Профиль');
 }
 
 async function switchToTab(tabName) {
     const profileContent = document.querySelector('.col-md-9');
     if (!profileContent) return;
-    const sidebarLabels = ['Профиль', 'Мои аренды', 'Сообщения', 'Мои объявления'];
+    const sidebarLabels = ['Профиль', 'Сообщения', 'Мои объявления'];
     if (sidebarLabels.includes(tabName)) setSidebarActiveTab(tabName);
     if (tabName === 'Профиль') {
         profileContent.innerHTML = `<div id="profileOverview"></div>`;
         await renderProfileOverview();
-    } else if (tabName === 'Мои аренды') {
-        profileContent.innerHTML = `<h5>Активные бронирования</h5><div id="rentalsList"></div>`;
-        await loadBookings(currentUser.id);
     } else if (tabName === 'Мои объявления' && currentUser.type === 'landlord') {
         profileContent.innerHTML = `<div id="landlordListingsPanel"></div>`;
         await renderLandlordListingsPanel();
     } else if (tabName === 'Сообщения') {
-        if (currentUser.type !== 'tenant') {
-            profileContent.innerHTML = `<h5>Сообщения</h5><p class="text-muted">Переписка доступна только арендаторам.</p>`;
-            return;
-        }
         profileContent.innerHTML = `
           <div class="row">
             <div class="col-md-4">
@@ -173,9 +166,14 @@ async function renderLandlordListingsPanel() {
                         <strong>${listing.title || 'Объявление'}</strong><br/>
                         ${Number(listing.price || 0).toLocaleString('ru-RU')} ₽ / мес
                         <div class="text-muted small mt-1">Фото: ${(listing.photos || []).length}</div>
-                        <button class="btn btn-outline-primary btn-sm mt-2 edit-listing-btn" data-listing-id="${listing.id}">
-                          Редактировать
-                        </button>
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                          <button class="btn btn-outline-primary btn-sm edit-listing-btn" data-listing-id="${listing.id}">
+                            Редактировать
+                          </button>
+                          <button class="btn btn-outline-danger btn-sm unpublish-listing-btn" data-listing-id="${listing.id}">
+                            Снять с показа
+                          </button>
+                        </div>
                     </div></div>
                   `
               )
@@ -201,6 +199,14 @@ async function renderLandlordListingsPanel() {
             const listing = activeOffers.find((item) => item.id === listingId);
             if (!listing) return;
             openEditListingModal(listing);
+        });
+    });
+
+    document.querySelectorAll('.unpublish-listing-btn').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const listingId = button.getAttribute('data-listing-id');
+            if (!listingId) return;
+            await handleUnpublishListing(listingId);
         });
     });
 }
@@ -438,6 +444,20 @@ async function uploadPhotoIdsFromInput(input) {
     return uploaded;
 }
 
+async function handleUnpublishListing(listingId) {
+    const shouldContinue = window.confirm('Снять это объявление с показа?');
+    if (!shouldContinue) return;
+    try {
+        await listingsAPI.unpublish(listingId);
+        showModal('listingActionModal', 'Мои объявления', '<div class="alert alert-success">Объявление снято с показа</div>');
+        await refreshLandlordListingUIs();
+    } catch (error) {
+        console.error('Error unpublishing listing:', error);
+        const message = error?.message ? escapeHtml(error.message) : 'Не удалось снять объявление с показа';
+        showModal('listingActionModal', 'Мои объявления', `<div class="alert alert-danger">${message}</div>`);
+    }
+}
+
 async function loadBookings(userId) {
     try {
         const bookings = await bookingsAPI.getByUserId(userId);
@@ -464,6 +484,18 @@ async function loadBookings(userId) {
                       <div class="card mb-2"><div class="card-body">
                         <strong>${listing?.title || booking.listingId}</strong><br/>
                         ${startDate} — ${endDate}
+                        ${
+                            currentUser?.type === 'tenant'
+                                ? `<div class="mt-2">
+                            <button
+                              class="btn btn-outline-primary btn-sm leave-review-btn"
+                              data-landlord-id="${booking.landlordId}"
+                              data-listing-id="${booking.listingId}">
+                              Оставить отзыв
+                            </button>
+                          </div>`
+                                : ''
+                        }
                       </div></div>
                     `;
                 } catch {
@@ -472,8 +504,74 @@ async function loadBookings(userId) {
             })
         );
         target.innerHTML = cards.join('');
+        if (currentUser?.type === 'tenant') {
+            target.querySelectorAll('.leave-review-btn').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const landlordId = button.getAttribute('data-landlord-id');
+                    const listingId = button.getAttribute('data-listing-id');
+                    if (!landlordId || !listingId) return;
+                    openLeaveReviewModal({ landlordId, listingId });
+                });
+            });
+        }
     } catch (error) {
         console.error('Error loading bookings:', error);
+    }
+}
+
+function openLeaveReviewModal({ landlordId, listingId }) {
+    showModal(
+        'leaveReviewModal',
+        'Оставить отзыв',
+        `
+          <form id="leaveReviewForm">
+            <input type="hidden" id="reviewLandlordId" value="${escapeHtml(landlordId)}" />
+            <input type="hidden" id="reviewListingId" value="${escapeHtml(listingId)}" />
+            <div class="mb-2">
+              <label class="form-label" for="reviewRating">Оценка</label>
+              <select id="reviewRating" class="form-select" required>
+                <option value="5">5</option>
+                <option value="4">4</option>
+                <option value="3">3</option>
+                <option value="2">2</option>
+                <option value="1">1</option>
+              </select>
+            </div>
+            <div class="mb-2">
+              <label class="form-label" for="reviewText">Комментарий</label>
+              <textarea id="reviewText" class="form-control" rows="3" placeholder="Опишите ваш опыт аренды"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Отправить отзыв</button>
+          </form>
+        `
+    );
+    const form = document.getElementById('leaveReviewForm');
+    if (form) {
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            await handleSubmitReview();
+        });
+    }
+}
+
+async function handleSubmitReview() {
+    const targetId = document.getElementById('reviewLandlordId')?.value;
+    const listingId = document.getElementById('reviewListingId')?.value;
+    const rating = Number(document.getElementById('reviewRating')?.value || 0);
+    const text = document.getElementById('reviewText')?.value?.trim();
+
+    if (!targetId || !listingId || rating < 1 || rating > 5) {
+        showModal('leaveReviewModal', 'Оставить отзыв', '<div class="alert alert-warning">Проверьте заполненные поля</div>');
+        return;
+    }
+
+    try {
+        await reviewsAPI.create({ targetId, listingId, rating, text });
+        showModal('leaveReviewModal', 'Оставить отзыв', '<div class="alert alert-success">Спасибо! Отзыв отправлен.</div>');
+    } catch (error) {
+        console.error('Error creating review:', error);
+        const message = error?.message ? escapeHtml(error.message) : 'Не удалось отправить отзыв';
+        showModal('leaveReviewModal', 'Оставить отзыв', `<div class="alert alert-danger">${message}</div>`);
     }
 }
 

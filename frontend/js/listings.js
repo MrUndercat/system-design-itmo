@@ -11,7 +11,7 @@ async function loadListings() {
             listingsAPI.getAll(),
             authAPI.getCurrentUser().catch(() => null),
         ]);
-        const hideChatButton = currentUser?.type !== 'tenant';
+        const hideChatButton = !currentUser || currentUser.type === 'landlord';
 
         listingsContainer.innerHTML = '';
 
@@ -234,9 +234,7 @@ async function showUserCard(userId, listingId) {
             'userCardModal',
             'Карточка пользователя',
             `
-              <p><strong>Имя:</strong> ${user.name || 'Не указано'}</p>
               <p><strong>Email:</strong> ${user.email || 'Не указано'}</p>
-              <p><strong>Тип:</strong> ${user.type || 'Не указано'}</p>
               ${writeButtonHtml}
             `
         );
@@ -277,12 +275,19 @@ async function startChatWithUser(otherUserId, listingId = null) {
 
 async function showListingReviews(listingId) {
     try {
-        const reviews = await reviewsAPI.getByListing(listingId);
-        if (!reviews.length) {
-            showModal('reviewsModal', 'Отзывы', '<p class="text-muted">По этому объекту пока нет отзывов.</p>');
-            return;
-        }
-        const items = reviews
+        const [reviews, viewer, listing] = await Promise.all([
+            reviewsAPI.getByListing(listingId),
+            authAPI.getCurrentUser().catch(() => null),
+            listingsAPI.getById(listingId),
+        ]);
+        const canWriteReview = viewer?.type === 'tenant' && listing?.ownerId && listing.ownerId !== viewer.id;
+        const writeBlock = canWriteReview
+            ? `<div class="mb-3">
+                 <button class="btn btn-primary btn-sm" id="openWriteReviewBtn">Написать отзыв</button>
+               </div>`
+            : '';
+        const items = reviews.length
+            ? reviews
             .map(
                 (review) => `
                 <div class="border rounded p-2 mb-2">
@@ -291,12 +296,84 @@ async function showListingReviews(listingId) {
                 </div>
             `
             )
-            .join('');
-        showModal('reviewsModal', 'Отзывы по собственности', items);
+            .join('')
+            : '<p class="text-muted">По этому объекту пока нет отзывов.</p>';
+        showModal('reviewsModal', 'Отзывы по собственности', `${writeBlock}${items}`);
+        if (canWriteReview) {
+            const writeBtn = document.getElementById('openWriteReviewBtn');
+            if (writeBtn) {
+                writeBtn.addEventListener('click', () => {
+                    openWriteReviewModal(listing.ownerId, listingId);
+                });
+            }
+        }
     } catch (error) {
         console.error('Error loading reviews:', error);
         showModal('reviewsModal', 'Отзывы', '<div class="alert alert-danger">Ошибка загрузки отзывов</div>');
     }
+}
+
+function openWriteReviewModal(targetId, listingId) {
+    showModal(
+        'writeReviewModal',
+        'Написать отзыв',
+        `
+          <form id="writeReviewForm">
+            <div class="mb-2">
+              <label class="form-label" for="writeReviewRating">Оценка</label>
+              <select id="writeReviewRating" class="form-select" required>
+                <option value="5">5</option>
+                <option value="4">4</option>
+                <option value="3">3</option>
+                <option value="2">2</option>
+                <option value="1">1</option>
+              </select>
+            </div>
+            <div class="mb-2">
+              <label class="form-label" for="writeReviewText">Комментарий</label>
+              <textarea id="writeReviewText" class="form-control" rows="3" placeholder="Ваш комментарий"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Отправить</button>
+          </form>
+        `
+    );
+    const form = document.getElementById('writeReviewForm');
+    if (form) {
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            await submitWriteReview(targetId, listingId);
+        });
+    }
+}
+
+async function submitWriteReview(targetId, listingId) {
+    const rating = Number(document.getElementById('writeReviewRating')?.value || 0);
+    const text = document.getElementById('writeReviewText')?.value?.trim();
+    if (!targetId || !listingId || rating < 1 || rating > 5) {
+        showModal('writeReviewModal', 'Написать отзыв', '<div class="alert alert-warning">Проверьте данные формы</div>');
+        return;
+    }
+    try {
+        await reviewsAPI.create({ targetId, listingId, rating, text });
+        syncReviewModalClosing();
+        showModal('writeReviewModal', 'Написать отзыв', '<div class="alert alert-success">Отзыв отправлен</div>');
+    } catch (error) {
+        console.error('Error creating review:', error);
+        const message = error?.message || 'Не удалось отправить отзыв';
+        showModal('writeReviewModal', 'Написать отзыв', `<div class="alert alert-danger">${message}</div>`);
+    }
+}
+
+function syncReviewModalClosing() {
+    const writeReviewModalEl = document.getElementById('writeReviewModal');
+    if (!writeReviewModalEl) return;
+    const closeBoth = () => {
+        const reviewsModalEl = document.getElementById('reviewsModal');
+        if (!reviewsModalEl) return;
+        const reviewsModal = bootstrap.Modal.getInstance(reviewsModalEl);
+        if (reviewsModal) reviewsModal.hide();
+    };
+    writeReviewModalEl.addEventListener('hidden.bs.modal', closeBoth, { once: true });
 }
 
 function initListingActions() {

@@ -19,7 +19,9 @@ export function registerRoutes(app: Express): void {
   app.get("/listings", async (req: Request, res: Response) => {
     const { rows } = await pool.query(
       `SELECT id, created_at, owner_id, type_id, name, price, deposit, description, city, address
-       FROM listings ORDER BY created_at DESC LIMIT 100`
+       FROM listings
+       WHERE archived_at IS NULL
+       ORDER BY created_at DESC LIMIT 100`
     );
     res.json({ data: rows });
   });
@@ -129,9 +131,12 @@ export function registerRoutes(app: Express): void {
       return res.status(400).json({ message: "listingId and tenantId required" });
     }
     const landlordId = req.user!.sub;
-    const { rows: l } = await pool.query<{ owner_id: string }>("SELECT owner_id FROM listings WHERE id = $1", [
+    const { rows: l } = await pool.query<{ owner_id: string }>(
+      "SELECT owner_id FROM listings WHERE id = $1 AND archived_at IS NULL",
+      [
       listingId,
-    ]);
+      ]
+    );
     if (!l.length) return res.status(404).json({ message: "listing not found" });
     if (l[0].owner_id !== landlordId) {
       return res.status(403).json({ message: "only listing owner creates deal as landlord" });

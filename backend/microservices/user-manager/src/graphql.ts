@@ -169,7 +169,7 @@ const resolvers = {
       } catch (e: unknown) {
         const err = e as { code?: string; constraint?: string; message?: string };
         if (err.code === "23505" || err.message?.includes("users_email_key")) {
-          throw new Error("юзер уже существует");
+          throw new Error("Пользователь с таким email уже зарегистрирован");
         }
         throw e;
       }
